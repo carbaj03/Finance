@@ -44,14 +44,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import main.AssetType
 import main.Historical
 import main.Portfolio
 import main.PortfolioGateway
 import main.PortfolioStore
-import main.SignalFilter
 import main.SignalRepositoryImpl
-import main.SignalType
+import main.SignalStore
 import main.Signals
 import main.System
 import org.jetbrains.compose.resources.ExperimentalResourceApi
@@ -164,18 +162,27 @@ fun MyTab(
   }
 }
 
+enum class Section(
+  val title: String,
+  val icon: String,
+) {
+  Signals(R.Strings.signals, R.Images.ic_alerts),
+  Portfolio(R.Strings.portfolio, R.Images.ic_portfolio),
+  Historical(R.Strings.historical, R.Images.ic_historical),
+  System(R.Strings.system, R.Images.ic_system)
+}
+
 @Composable
 fun Home() {
-  val portfolioStore = remember { PortfolioStore(gateway = object : PortfolioGateway{}) }
+  val portfolioStore = remember { PortfolioStore(gateway = object : PortfolioGateway {}) }
+  val signalStore = remember { SignalStore(signalRepository = SignalRepositoryImpl()) }
 
   val stocksState = rememberLazyListState()
   val cryptosState = rememberLazyListState()
   val reitState = rememberLazyListState()
   val materialsState = rememberLazyListState()
 
-  var selected by rememberSaveable { mutableIntStateOf(0) }
-  var signal by remember { mutableStateOf(SignalType.Registry) }
-  var selectedChip by remember { mutableStateOf(SignalFilter.All) }
+  var section by rememberSaveable { mutableStateOf(Section.Signals) }
 
   val allState = rememberLazyListState()
   val buyState = rememberLazyListState()
@@ -186,27 +193,23 @@ fun Home() {
     topBar = { TopBar() },
     bottomBar = {
       BottomBar(
-        selected = selected,
-        onSelected = { selected = it }
+        selected = section,
+        onSelected = { section = it }
       )
     }
   ) { padding ->
-    when (selected) {
-      0 -> {
+    when (section) {
+      Section.Signals -> {
         Signals(
+          signalStore = signalStore,
           allState = allState,
           buyState = buyState,
           sellState = sellState,
           radarState = radarState,
-          signalRepository = remember { SignalRepositoryImpl() },
-          signal = signal,
-          onSignal = { signal = it },
-          selectedFilter = selectedChip,
-          onSelectedFilter = { selectedChip = it },
           modifier = Modifier.padding(padding).fillMaxSize()
         )
       }
-      1 -> {
+      Section.Portfolio -> {
         Portfolio(
           store = portfolioStore,
           stockState = stocksState,
@@ -216,12 +219,12 @@ fun Home() {
           modifier = Modifier.padding(padding).fillMaxSize()
         )
       }
-      2 -> {
+      Section.Historical -> {
         Historical(
           modifier = Modifier.padding(padding).fillMaxSize()
         )
       }
-      3 -> {
+      Section.System -> {
         System(
           modifier = Modifier.padding(padding).fillMaxSize()
         )
@@ -240,8 +243,8 @@ fun TopBar() {
 
 @Composable
 fun BottomBar(
-  selected: Int = 0,
-  onSelected: (Int) -> Unit,
+  selected: Section,
+  onSelected: (Section) -> Unit,
 ) {
   Divider(
     thickness = 0.5.dp,
@@ -250,35 +253,29 @@ fun BottomBar(
   Row(
     modifier = Modifier.navigationBarsPadding().padding(16.dp)
   ) {
-    Tab(
-      modifier = Modifier.weight(1f),
-      icon = R.Images.ic_alerts,
-      text = "Señales",
-      selected = selected == 0,
-      onSelected = { onSelected(0) }
-    )
-    Tab(
-      modifier = Modifier.weight(1f),
-      icon = R.Images.ic_portfolio,
-      text = "Cartera",
-      selected = selected == 1,
-      onSelected = { onSelected(1) }
-    )
-    Tab(
-      modifier = Modifier.weight(1f),
-      icon = R.Images.ic_historical,
-      text = "Historial",
-      selected = selected == 2,
-      onSelected = { onSelected(2) }
-    )
-    Tab(
-      modifier = Modifier.weight(1f),
-      icon = R.Images.ic_system,
-      text = "Sistema",
-      selected = selected == 3,
-      onSelected = { onSelected(3) }
-    )
+    Section.entries.forEach { Tab ->
+      Tab(
+        modifier = Modifier.weight(1f),
+        selected = selected == Tab,
+        onSelected = onSelected
+      )
+    }
   }
+}
+
+@Composable
+operator fun Section.invoke(
+  modifier: Modifier,
+  selected: Boolean,
+  onSelected: (Section) -> Unit,
+){
+  Tab(
+    modifier = modifier,
+    icon = icon,
+    text = title,
+    selected = selected,
+    onSelected = { onSelected(this) }
+  )
 }
 
 @OptIn(ExperimentalResourceApi::class)
@@ -305,27 +302,5 @@ fun Tab(
       style = MaterialTheme.typography.labelSmall,
       color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
     )
-  }
-}
-
-@Composable
-fun TabsBar() {
-  var selectedItem by remember { mutableIntStateOf(0) }
-  val items = listOf("Songs", "Artists", "Playlists")
-
-  NavigationBar {
-    items.forEachIndexed { index, item ->
-      NavigationBarItem(
-        icon = {
-          Icon(
-            imageVector = Icons.Filled.Favorite,
-            contentDescription = item
-          )
-        },
-
-        selected = selectedItem == index,
-        onClick = { selectedItem = index }
-      )
-    }
   }
 }

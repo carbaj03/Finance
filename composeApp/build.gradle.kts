@@ -4,6 +4,7 @@ plugins {
   alias(libs.plugins.kotlinMultiplatform)
   alias(libs.plugins.androidApplication)
   alias(libs.plugins.jetbrainsCompose)
+  alias(libs.plugins.googleGmsGoogleServices)
 }
 
 kotlin {
@@ -36,6 +37,7 @@ kotlin {
     androidMain.dependencies {
       implementation(libs.compose.ui.tooling.preview)
       implementation(libs.androidx.activity.compose)
+      implementation(libs.firebase.messaging)
     }
 
     commonMain.dependencies {
@@ -82,4 +84,3 @@ android {
     debugImplementation(libs.compose.ui.tooling)
   }
 }
-

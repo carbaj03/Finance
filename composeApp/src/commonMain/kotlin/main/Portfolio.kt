@@ -20,8 +20,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
@@ -131,7 +131,8 @@ data class PortfolioState(
   val cryptoSummary: CryptoSummary,
   val reitSummary: ReitSummary,
   val materialSummary: MaterialSummary,
-  val selected: AssetType = AssetType.Stock
+  val assetType: AssetType = AssetType.Stock,
+  val tabs: List<AssetType> = AssetType.entries
 )
 
 class PortfolioStore(
@@ -147,14 +148,17 @@ class PortfolioStore(
 
   val state: StateFlow<PortfolioState> = _state
 
+  suspend fun load() {
+    _state.value = _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = gateway.stocks()))
+  }
+
   suspend fun onSelected(assetType: Int) {
-    _state.value = _state.value.copy(selected = AssetType.entries[assetType])
-    _state.value = when(assetType) {
-      0 -> _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = gateway.stocks()))
-      1 -> _state.value.copy(cryptoSummary = _state.value.cryptoSummary.copy(items = gateway.cryptos()))
-      2 -> _state.value.copy(reitSummary = _state.value.reitSummary.copy(items = gateway.reits()))
-      3 -> _state.value.copy(materialSummary = _state.value.materialSummary.copy(items = gateway.materials()))
-      else -> _state.value
+    _state.value = _state.value.copy(assetType = AssetType.entries[assetType])
+    _state.value = when (_state.value.assetType) {
+      AssetType.Stock -> _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = gateway.stocks()))
+      AssetType.Crypto -> _state.value.copy(cryptoSummary = _state.value.cryptoSummary.copy(items = gateway.cryptos()))
+      AssetType.Reit -> _state.value.copy(reitSummary = _state.value.reitSummary.copy(items = gateway.reits()))
+      AssetType.Material -> _state.value.copy(materialSummary = _state.value.materialSummary.copy(items = gateway.materials()))
     }
   }
 
@@ -174,25 +178,32 @@ fun Portfolio(
   val scope = rememberCoroutineScope()
 
   LaunchedEffect(Unit) {
-    store.onSelected(0)
+    store.load()
   }
 
-  val tabs by remember {
-    mutableStateOf(
-      listOf(R.Images.ic_stocks, R.Images.ic_cripto, R.Images.ic_reit, R.Images.ic_materials)
-    )
+  val tabs by remember(state.tabs) {
+    derivedStateOf {
+      state.tabs.map {
+        when (it) {
+          AssetType.Stock -> R.Images.ic_stocks
+          AssetType.Crypto -> R.Images.ic_cripto
+          AssetType.Reit -> R.Images.ic_reit
+          AssetType.Material -> R.Images.ic_materials
+        }
+      }
+    }
   }
 
   Column(
     modifier = modifier
   ) {
     CustomTabs(
-      selected = AssetType.entries.indexOf(state.selected),
+      selected = AssetType.entries.indexOf(state.assetType),
       onSelected = { scope.launch { store.onSelected(it) } },
       tabs = tabs
     )
 
-    when (state.selected) {
+    when (state.assetType) {
       AssetType.Stock -> {
         state.stockSummary(stockState)
       }

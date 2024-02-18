@@ -25,15 +25,19 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import domain.Signal
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 
@@ -137,14 +141,40 @@ enum class SignalFilter {
   All, Buy, Sell, Radar
 }
 
+data class SignalState(
+  val signal: SignalType = SignalType.Registry,
+  val filter: SignalFilter = SignalFilter.All,
+  val signals: Signals = Signals(),
+)
+
+class SignalStore(
+  val signalRepository: SignalRepository,
+  initialState: SignalState = SignalState()
+) {
+  private val _state = MutableStateFlow(initialState)
+  val state: StateFlow<SignalState> = _state
+
+  suspend fun load() {
+    _state.value = _state.value.copy(signals = signalRepository.getSignals())
+  }
+
+  suspend fun onSignal(signal: SignalType) {
+    _state.value = _state.value.copy(signal = signal)
+    _state.value = when (signal) {
+      SignalType.Registry -> _state.value.copy(signals = signalRepository.getSignals())
+      SignalType.Notifications -> _state.value
+    }
+  }
+
+  fun onFilter(filter: SignalFilter) {
+    _state.value = _state.value.copy(filter = filter)
+  }
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun Signals(
-  signalRepository: SignalRepository,
-  signal: SignalType,
-  onSignal: (SignalType) -> Unit,
-  selectedFilter: SignalFilter,
-  onSelectedFilter: (SignalFilter) -> Unit,
+  signalStore: SignalStore,
   modifier: Modifier = Modifier,
   allState: LazyListState,
   buyState: LazyListState,
@@ -152,24 +182,26 @@ fun Signals(
   radarState: LazyListState
 ) {
   val tabs by remember { mutableStateOf(listOf(R.Images.ic_registry, R.Images.ic_notifications)) }
-  var signals by remember { mutableStateOf(Signals()) }
+  val scope = rememberCoroutineScope()
+
+  val state by signalStore.state.collectAsState()
 
   LaunchedEffect(Unit) {
-    signals = signalRepository.getSignals()
+    signalStore.load()
   }
 
   Column(
     modifier = modifier
   ) {
     CustomTabs(
-      selected = SignalType.entries.indexOf(signal),
-      onSelected = { onSignal(SignalType.entries[it]) },
+      selected = SignalType.entries.indexOf(state.signal),
+      onSelected = { scope.launch { signalStore.onSignal(SignalType.entries[it]) } },
       tabs = tabs
     )
 
     Spacer(modifier = Modifier.height(16.dp))
 
-    when (signal) {
+    when (state.signal) {
       SignalType.Registry -> {
         Row(
           modifier = Modifier
@@ -180,32 +212,32 @@ fun Signals(
           Spacer(modifier = Modifier.width(16.dp))
           FilterChip(
             label = { Text(R.Strings.all) },
-            selected = selectedFilter == SignalFilter.All,
-            onClick = { onSelectedFilter(SignalFilter.All) }
+            selected = state.filter == SignalFilter.All,
+            onClick = { signalStore.onFilter(SignalFilter.All) }
           )
           FilterChip(
             label = { Text(R.Strings.buy) },
-            selected = selectedFilter == SignalFilter.Buy,
-            onClick = { onSelectedFilter(SignalFilter.Buy) }
+            selected = state.filter == SignalFilter.Buy,
+            onClick = { signalStore.onFilter(SignalFilter.Buy) }
           )
           FilterChip(
             label = { Text(R.Strings.sell) },
-            selected = selectedFilter == SignalFilter.Sell,
-            onClick = { onSelectedFilter(SignalFilter.Sell) }
+            selected = state.filter == SignalFilter.Sell,
+            onClick = { signalStore.onFilter(SignalFilter.Sell) }
           )
           FilterChip(
             label = { Text(R.Strings.radar) },
-            selected = selectedFilter == SignalFilter.Radar,
-            onClick = { onSelectedFilter(SignalFilter.Radar) }
+            selected = state.filter == SignalFilter.Radar,
+            onClick = { signalStore.onFilter(SignalFilter.Radar) }
           )
         }
 
-        when (selectedFilter) {
+        when (state.filter) {
           SignalFilter.All -> {
             LazyColumn(
               state = allState
             ) {
-              items(signals.all) { signal ->
+              items(state.signals.all) { signal ->
                 SignalItem(signal)
                 Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.surfaceVariant)
               }
@@ -215,7 +247,7 @@ fun Signals(
             LazyColumn(
               state = buyState
             ) {
-              items(signals.buy) { signal ->
+              items(state.signals.buy) { signal ->
                 SignalItem(signal)
                 Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.surfaceVariant)
               }
@@ -225,7 +257,7 @@ fun Signals(
             LazyColumn(
               state = sellState
             ) {
-              items(signals.sell) { signal ->
+              items(state.signals.sell) { signal ->
                 SignalItem(signal)
                 Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.surfaceVariant)
               }
@@ -235,7 +267,7 @@ fun Signals(
             LazyColumn(
               state = radarState
             ) {
-              items(signals.radar) { signal ->
+              items(state.signals.radar) { signal ->
                 SignalItem(signal)
                 Divider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.surfaceVariant)
               }

@@ -13,6 +13,11 @@ object R {
     const val sell = "Vender"
     const val radar = "Radar"
 
+    const val signals = "Señales"
+    const val portfolio = "Cartera"
+    const val historical = "Histórico"
+    const val system = "Sistema"
+
   }
 
   object Images {
