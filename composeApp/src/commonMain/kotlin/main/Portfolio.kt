@@ -1,7 +1,15 @@
 package main
 
+import Asset
+import AssetType
+import CryptoSummary
 import CustomTabs
+import MaterialSummary
+import PortfolioGateway
 import R
+import ReitSummary
+import StockSummary
+import Summary
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -28,103 +36,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
-import domain.Asset
-import domain.Asset.Crypto
-import domain.Asset.Material
-import domain.Asset.Reit
-import domain.Asset.Stock
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
-
-interface PortfolioGateway {
-  suspend fun stocks(): List<Stock> =
-    listOf(
-      Stock("AAPL", "05/01/2024", 170f, 160f),
-      Stock("GOOGL", "19/01/2024", 2800f, 2750f),
-      Stock("MSFT", "28/01/2024", 300f, 290f),
-      Stock("AMZN", "26/01/2024", 3200f, 3100f),
-      Stock("FB", "25/01/2024", 250f, 240f),
-      Stock("TSLA", "03/01/2024", 800f, 780f),
-      Stock("NFLX", "09/01/2024", 500f, 485f),
-      Stock("NVDA", "04/01/2024", 700f, 690f),
-      Stock("INTC", "16/01/2024", 50f, 48f),
-      Stock("AMD", "25/01/2024", 100f, 95f),
-      Stock("BABA", "15/01/2024", 150f, 145f),
-      Stock("SONY", "16/01/2024", 80f, 78f),
-      Stock("SNE", "21/01/2024", 85f, 82f),
-      Stock("IBM", "13/01/2024", 130f, 128f),
-      Stock("HPQ", "26/01/2024", 30f, 28f),
-      Stock("XOM", "07/01/2024", 60f, 58f),
-      Stock("CVX", "04/01/2024", 120f, 118f),
-      Stock("PG", "16/01/2024", 140f, 138f),
-      Stock("KO", "01/01/2024", 55f, 54f),
-      Stock("PEP", "29/01/2024", 140f, 135f),
-      Stock("MCD", "27/01/2024", 230f, 225f),
-      Stock("WMT", "13/01/2024", 140f, 138f),
-      Stock("DIS", "14/01/2024", 100f, 98f),
-      Stock("V", "20/01/2024", 210f, 205f),
-      Stock("MA", "25/01/2024", 330f, 325f)
-    )
-
-  suspend fun cryptos(): List<Crypto> =
-    listOf(
-      Crypto("BTC", "2021-01-01", 100f, 90f),
-      Crypto("ETH", "2021-01-01", 900f, 890f)
-    )
-
-  suspend fun reits(): List<Reit> =
-    listOf(
-      Reit("O", "2021-01-01", 100f, 90f),
-      Reit("STOR", "2021-01-01", 900f, 890f)
-    )
-
-  suspend fun materials(): List<Material> =
-    listOf(
-      Material("X", "2021-01-01", 100f, 90f),
-      Material("NUE", "2021-01-01", 900f, 890f)
-    )
-}
-
-sealed interface Summary {
-  val title: String
-  val items: List<Asset>
-  val performance: String
-  val expiration: String
-  val dropdown: String
-}
-
-data class StockSummary(
-  override val title: String = "Stocks",
-  override val items: List<Stock>,
-  override val performance: String = "9.5%",
-  override val expiration: String = "31dias",
-  override val dropdown: String = "9.5%"
-) : Summary
-
-data class CryptoSummary(
-  override val title: String = "Cripto",
-  override val items: List<Crypto>,
-  override val performance: String = "2.5%",
-  override val expiration: String = "15dias",
-  override val dropdown: String = "2.5%"
-) : Summary
-
-data class ReitSummary(
-  override val title: String = "Reit",
-  override val items: List<Reit>,
-  override val performance: String = "1.5%",
-  override val expiration: String = "45dias",
-  override val dropdown: String = "1.5%"
-) : Summary
-
-data class MaterialSummary(
-  override val title: String = "Materials",
-  override val items: List<Material>,
-  override val performance: String = "4.5%",
-  override val expiration: String = "60dias",
-  override val dropdown: String = "4.5%"
-) : Summary
 
 data class PortfolioState(
   val stockSummary: StockSummary,
@@ -136,7 +50,7 @@ data class PortfolioState(
 )
 
 class PortfolioStore(
-  private val gateway: PortfolioGateway,
+  private val portfolioRepository: PortfolioGateway,
   initialState: PortfolioState = PortfolioState(
     stockSummary = StockSummary(items = emptyList()),
     cryptoSummary = CryptoSummary(items = emptyList()),
@@ -149,16 +63,16 @@ class PortfolioStore(
   val state: StateFlow<PortfolioState> = _state
 
   suspend fun load() {
-    _state.value = _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = gateway.stocks()))
+    _state.value = _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = portfolioRepository.stocks()))
   }
 
   suspend fun onSelected(assetType: Int) {
     _state.value = _state.value.copy(assetType = AssetType.entries[assetType])
     _state.value = when (_state.value.assetType) {
-      AssetType.Stock -> _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = gateway.stocks()))
-      AssetType.Crypto -> _state.value.copy(cryptoSummary = _state.value.cryptoSummary.copy(items = gateway.cryptos()))
-      AssetType.Reit -> _state.value.copy(reitSummary = _state.value.reitSummary.copy(items = gateway.reits()))
-      AssetType.Material -> _state.value.copy(materialSummary = _state.value.materialSummary.copy(items = gateway.materials()))
+      AssetType.Stock -> _state.value.copy(stockSummary = _state.value.stockSummary.copy(items = portfolioRepository.stocks()))
+      AssetType.Crypto -> _state.value.copy(cryptoSummary = _state.value.cryptoSummary.copy(items = portfolioRepository.cryptos()))
+      AssetType.Reit -> _state.value.copy(reitSummary = _state.value.reitSummary.copy(items = portfolioRepository.reits()))
+      AssetType.Material -> _state.value.copy(materialSummary = _state.value.materialSummary.copy(items = portfolioRepository.materials()))
     }
   }
 
@@ -186,7 +100,7 @@ fun Portfolio(
       state.tabs.map {
         when (it) {
           AssetType.Stock -> R.Images.ic_stocks
-          AssetType.Crypto -> R.Images.ic_cripto
+          AssetType.Crypto -> R.Images.ic_crypto
           AssetType.Reit -> R.Images.ic_reit
           AssetType.Material -> R.Images.ic_materials
         }

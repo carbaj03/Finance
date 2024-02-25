@@ -1,5 +1,22 @@
 import androidx.compose.ui.graphics.Color
 
+interface Strings {
+  val dropdown: String
+  val expiration: String
+  val performance: String
+  val stocks: String
+
+  val all: String
+  val buy: String
+  val sell: String
+  val radar: String
+
+  val signals: String
+  val portfolio: String
+  val historical: String
+  val system: String
+}
+
 object R {
 
   object Strings {
@@ -21,14 +38,21 @@ object R {
   }
 
   object Images {
+    const val ic_logo = "ic_hopla.xml"
+
     const val ic_alerts = "ic_alerts.xml"
-    const val ic_cripto = "ic_cripto.xml"
-    const val ic_historical = "ic_historical.xml"
-    const val ic_materials = "ic_materials.xml"
+    const val ic_alerts_disabled = "ic_alerts_disabled.xml"
     const val ic_portfolio = "ic_portfolio.xml"
+    const val ic_portfolio_disabled = "ic_portfolio_disabled.xml"
+    const val ic_historical = "ic_historical.xml"
+    const val ic_historical_disabled = "ic_historical_disabled.xml"
+    const val ic_system = "ic_system.xml"
+    const val ic_system_disabled = "ic_system_disabled.xml"
+
+    const val ic_crypto = "ic_crypto.xml"
+    const val ic_materials = "ic_materials.xml"
     const val ic_reit = "ic_reit.xml"
     const val ic_stocks = "ic_stocks.xml"
-    const val ic_system = "ic_system.xml"
     const val ic_registry = "ic_registry.xml"
     const val ic_notifications = "ic_notifications.xml"
 

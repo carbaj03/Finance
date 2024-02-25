@@ -1,5 +1,3 @@
-import org.jetbrains.compose.ExperimentalComposeLibrary
-
 plugins {
   alias(libs.plugins.kotlinMultiplatform)
   alias(libs.plugins.androidApplication)
@@ -37,22 +35,24 @@ kotlin {
     androidMain.dependencies {
       implementation(libs.compose.ui.tooling.preview)
       implementation(libs.androidx.activity.compose)
-      implementation(libs.firebase.messaging)
+      implementation(project.dependencies.platform(libs.firebase.bom))
+      implementation(libs.firebase.auth.ktx)
+      implementation(libs.play.services.auth)
     }
 
     commonMain.dependencies {
+      implementation(projects.shared)
       implementation(compose.runtime)
       implementation(compose.foundation)
       implementation(compose.material3)
       implementation(compose.ui)
-      @OptIn(ExperimentalComposeLibrary::class)
       implementation(compose.components.resources)
     }
   }
 }
 
 android {
-  namespace = "org.acv.hola"
+  namespace = "org.acv.hopla"
   compileSdk = libs.versions.android.compileSdk.get().toInt()
 
   sourceSets["main"].manifest.srcFile("src/androidMain/AndroidManifest.xml")
@@ -60,7 +60,7 @@ android {
   sourceSets["main"].resources.srcDirs("src/commonMain/resources")
 
   defaultConfig {
-    applicationId = "org.acv.hola"
+    applicationId = "org.acv.hopla"
     minSdk = libs.versions.android.minSdk.get().toInt()
     targetSdk = libs.versions.android.targetSdk.get().toInt()
     versionCode = 1

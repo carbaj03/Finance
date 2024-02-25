@@ -11,7 +11,7 @@ fun System(
   modifier: Modifier = Modifier
 ) {
   Column(
-    modifier = Modifier.fillMaxSize()
+    modifier = modifier
   ) {
     Text("Sistema")
   }

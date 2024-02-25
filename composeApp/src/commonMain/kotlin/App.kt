@@ -1,62 +1,39 @@
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.indication
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.imePadding
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material3.DismissibleDrawerSheet
-import androidx.compose.material3.DismissibleNavigationDrawer
-import androidx.compose.material3.Divider
-import androidx.compose.material3.DrawerValue
-import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.ScrollableTabRow
-import androidx.compose.material3.TabRowDefaults
+import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
-import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
-import main.Historical
-import main.Portfolio
-import main.PortfolioGateway
-import main.PortfolioStore
-import main.SignalRepositoryImpl
-import main.SignalStore
-import main.Signals
-import main.System
+import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
+import kotlin.time.Duration.Companion.seconds
 
 @Composable
-fun App() {
+fun App(
+  dependencies: Dependencies
+) {
   MaterialTheme(
     colorScheme = MaterialTheme.colorScheme.copy(
       primary = Color.Black,
@@ -65,46 +42,32 @@ fun App() {
       primaryContainer = Color.Black,
       surfaceVariant = R.Color.VintageGreen,
       onSurfaceVariant = Color.Black,
-      onSecondary = Color.Black,
-      secondary = R.Color.VintageGreen,
+      secondary = Color.Black,
+      onSecondary = Color.White,
       secondaryContainer = Color.Black,
       onSecondaryContainer = Color.White,
     )
-
   ) {
-    val drawerState = rememberDrawerState(DrawerValue.Closed)
+
+    var splah by remember { mutableStateOf(true) }
+
+    val user: User by dependencies.userService.user.collectAsState()
+
     val scope = rememberCoroutineScope()
 
-    DismissibleNavigationDrawer(
-      modifier = Modifier.imePadding(),
-      drawerState = drawerState,
-      drawerContent = {
-        DismissibleDrawerSheet(
-          modifier = Modifier.width(360.dp),
-        ) {
-          Column {
-            Text("Hello, World!")
-          }
-        }
-      }
-    ) {
-      Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally
-      ) {
-        Home()
-      }
+    LaunchedEffect(Unit) {
+      delay(2.seconds)
+      splah = false
+    }
 
-      val minValue = -with(LocalDensity.current) { 360.0.dp.toPx() }
-      val maxValue = 0f
+    val store = remember { LoginStore(scope = scope, googleTap = dependencies.googleTap, userService = dependencies.userService) }
+    val mainStore = remember { MainStore(scope = scope, userService = dependencies.userService) }
 
-      Canvas(
-        modifier = Modifier.fillMaxSize()
-      ) {
-        drawRect(
-          color = Color.Black.copy(alpha = 0.5f),
-          alpha = calculateFraction(minValue, maxValue, drawerState.offset.value)
-        )
+    when {
+      splah -> SplashScreen()
+      else -> when (user) {
+        is NotLogged -> LoginScreen(store = store)
+        is Logged -> MainScreen(store = mainStore, dependencies = dependencies)
       }
     }
   }
@@ -120,13 +83,13 @@ fun CustomTabs(
     selectedTabIndex = selected,
     modifier = Modifier.fillMaxWidth(),
     edgePadding = 0.dp,
-    divider = { Divider(thickness = 0.5.dp) },
+    divider = { HorizontalDivider(thickness = 0.5.dp) },
     indicator = { tabPositions ->
-      TabRowDefaults.Indicator(
+      SecondaryIndicator(
         modifier = Modifier.customTabIndicatorOffset(
           currentTabPosition = tabPositions[selected],
           tabWidth = 40.dp
-        )
+        ),
       )
     }
   ) {
@@ -140,7 +103,6 @@ fun CustomTabs(
   }
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun MyTab(
   icon: String,
@@ -165,102 +127,12 @@ fun MyTab(
 enum class Section(
   val title: String,
   val icon: String,
+  val iconDisabled: String,
 ) {
-  Signals(R.Strings.signals, R.Images.ic_alerts),
-  Portfolio(R.Strings.portfolio, R.Images.ic_portfolio),
-  Historical(R.Strings.historical, R.Images.ic_historical),
-  System(R.Strings.system, R.Images.ic_system)
-}
-
-@Composable
-fun Home() {
-  val portfolioStore = remember { PortfolioStore(gateway = object : PortfolioGateway {}) }
-  val signalStore = remember { SignalStore(signalRepository = SignalRepositoryImpl()) }
-
-  val stocksState = rememberLazyListState()
-  val cryptosState = rememberLazyListState()
-  val reitState = rememberLazyListState()
-  val materialsState = rememberLazyListState()
-
-  var section by rememberSaveable { mutableStateOf(Section.Signals) }
-
-  val allState = rememberLazyListState()
-  val buyState = rememberLazyListState()
-  val sellState = rememberLazyListState()
-  val radarState = rememberLazyListState()
-
-  Scaffold(
-    topBar = { TopBar() },
-    bottomBar = {
-      BottomBar(
-        selected = section,
-        onSelected = { section = it }
-      )
-    }
-  ) { padding ->
-    when (section) {
-      Section.Signals -> {
-        Signals(
-          signalStore = signalStore,
-          allState = allState,
-          buyState = buyState,
-          sellState = sellState,
-          radarState = radarState,
-          modifier = Modifier.padding(padding).fillMaxSize()
-        )
-      }
-      Section.Portfolio -> {
-        Portfolio(
-          store = portfolioStore,
-          stockState = stocksState,
-          cryptoState = cryptosState,
-          reitState = reitState,
-          materialState = materialsState,
-          modifier = Modifier.padding(padding).fillMaxSize()
-        )
-      }
-      Section.Historical -> {
-        Historical(
-          modifier = Modifier.padding(padding).fillMaxSize()
-        )
-      }
-      Section.System -> {
-        System(
-          modifier = Modifier.padding(padding).fillMaxSize()
-        )
-      }
-    }
-  }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun TopBar() {
-  TopAppBar(
-    title = { Text("Hopla") },
-  )
-}
-
-@Composable
-fun BottomBar(
-  selected: Section,
-  onSelected: (Section) -> Unit,
-) {
-  Divider(
-    thickness = 0.5.dp,
-    color = MaterialTheme.colorScheme.surfaceVariant,
-  )
-  Row(
-    modifier = Modifier.navigationBarsPadding().padding(16.dp)
-  ) {
-    Section.entries.forEach { Tab ->
-      Tab(
-        modifier = Modifier.weight(1f),
-        selected = selected == Tab,
-        onSelected = onSelected
-      )
-    }
-  }
+  Signals(R.Strings.signals, R.Images.ic_alerts, R.Images.ic_alerts_disabled),
+  Portfolio(R.Strings.portfolio, R.Images.ic_portfolio, R.Images.ic_portfolio_disabled),
+  Historical(R.Strings.historical, R.Images.ic_historical, R.Images.ic_historical_disabled),
+  System(R.Strings.system, R.Images.ic_system, R.Images.ic_system_disabled),
 }
 
 @Composable
@@ -268,17 +140,16 @@ operator fun Section.invoke(
   modifier: Modifier,
   selected: Boolean,
   onSelected: (Section) -> Unit,
-){
+) {
   Tab(
     modifier = modifier,
-    icon = icon,
+    icon = if (selected) icon else iconDisabled,
     text = title,
     selected = selected,
     onSelected = { onSelected(this) }
   )
 }
 
-@OptIn(ExperimentalResourceApi::class)
 @Composable
 fun Tab(
   text: String,
@@ -295,12 +166,16 @@ fun Tab(
     Icon(
       painter = painterResource(icon),
       contentDescription = null,
-      tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+      tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
     )
     Text(
       text = text,
       style = MaterialTheme.typography.labelSmall,
-      color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.tertiary
+      color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
     )
   }
 }
+
+@OptIn(ExperimentalResourceApi::class)
+@Composable
+fun painterResource(icon: String) = painterResource(DrawableResource(icon))

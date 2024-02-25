@@ -1,41 +1,13 @@
-package domain
+import kotlinx.serialization.Serializable
 
-import main.AssetType
-
-sealed interface Signal {
-  val title: String
-  val description: String
-  val date: String
-  val assetType: AssetType
-
-  data class Buy(
-    override val title: String,
-    override val description: String,
-    override val date: String,
-    override val assetType: AssetType,
-  ) : Signal
-
-  data class Sell(
-    override val title: String,
-    override val description: String,
-    override val date: String,
-    override val assetType: AssetType,
-  ) : Signal
-
-  data class Radar(
-    override val title: String,
-    override val description: String,
-    override val date: String,
-    override val assetType: AssetType,
-  ) : Signal
-}
-
+@Serializable
 sealed interface Asset {
   val ticker: String
   val added: String
   val entry: Float
   val stop: Float
 
+  @Serializable
   data class Stock(
     override val ticker: String,
     override val added: String,
@@ -43,6 +15,7 @@ sealed interface Asset {
     override val stop: Float,
   ) : Asset
 
+  @Serializable
   data class Crypto(
     override val ticker: String,
     override val added: String,
@@ -50,6 +23,7 @@ sealed interface Asset {
     override val stop: Float,
   ) : Asset
 
+  @Serializable
   data class Reit(
     override val ticker: String,
     override val added: String,
@@ -57,6 +31,7 @@ sealed interface Asset {
     override val stop: Float,
   ) : Asset
 
+  @Serializable
   data class Material(
     override val ticker: String,
     override val added: String,

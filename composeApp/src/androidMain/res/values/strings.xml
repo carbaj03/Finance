@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">Hopla</string>
+    <string name="sign_in_button">Google</string>
 </resources>
