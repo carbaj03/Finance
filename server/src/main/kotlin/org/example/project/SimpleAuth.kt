@@ -18,7 +18,7 @@ fun Application.basic(
     basic(Name) {
       realm = "Access to the '/' path"
       validate { credentials ->
-        if (credentials.name == "1" && credentials.password == "1") {
+        if (credentials.name == "carbaj03" && credentials.password == "password123") {
           UserIdPrincipal(credentials.name)
         } else {
           null

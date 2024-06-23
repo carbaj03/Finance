@@ -28,7 +28,7 @@ class PortfolioGatewayImpl(
     install(Auth) {
       basic {
         credentials {
-          BasicAuthCredentials(username = "1", password = "1")
+          BasicAuthCredentials(username = "carbaj03", password = "password123")
         }
         realm = "Access to the '/' path"
       }
@@ -46,14 +46,14 @@ class PortfolioGatewayImpl(
 
   override suspend fun reits(): List<Reit> =
     listOf(
-      Reit("O", "2021-01-01", 100f, 90f),
-      Reit("STOR", "2021-01-01", 900f, 890f)
+      Reit("O", name = "Realty Income", "2021-01-01", 100f, 90f),
+      Reit("STOR", name = "STORE Capital", "2021-01-01", 900f, 890f)
     )
 
   override suspend fun materials(): List<Material> =
     listOf(
-      Material("X", "2021-01-01", 100f, 90f),
-      Material("NUE", "2021-01-01", 900f, 890f)
+      Material("X", name = "United States Steel", "2021-01-01", 100f, 90f),
+      Material("NUE", name = "Nucor", "2021-01-01", 900f, 890f)
     )
 }
 

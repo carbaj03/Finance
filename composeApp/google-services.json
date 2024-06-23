@@ -1,0 +1,47 @@
+{
+  "project_info": {
+    "project_number": "994737436968",
+    "project_id": "hopla-415105",
+    "storage_bucket": "hopla-415105.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:994737436968:android:d7fc28272c5d00ed87f81d",
+        "android_client_info": {
+          "package_name": "org.acv.hopla"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "994737436968-h043tvtvinamkdgi99jecujk55fdic6f.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "org.acv.hopla",
+            "certificate_hash": "383d6b60c07855c950763e40c22521277b2686fc"
+          }
+        },
+        {
+          "client_id": "994737436968-vc158aum1ruraklgvckbc5bjeg0pj20d.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCfGMSb7Xbzs-lQf7q1uEHYAs_Wkrq3wts"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "994737436968-vc158aum1ruraklgvckbc5bjeg0pj20d.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

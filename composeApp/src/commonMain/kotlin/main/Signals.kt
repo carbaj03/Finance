@@ -7,38 +7,24 @@ import R
 import Signal
 import SignalRepository
 import Signals
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.FilterChip
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import arrow.core.raise.either
+import displayName
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -108,6 +94,7 @@ fun Signals(
   ) {
     item {
       CustomTabs(
+        modifier = Modifier.fillMaxWidth(),
         selected = SignalType.entries.indexOf(state.signal),
         onSelected = { scope.launch { signalStore.onSignal(SignalType.entries[it]) } },
         tabs = tabs
@@ -128,25 +115,43 @@ fun Signals(
             FilterChip(
               label = { Text(R.Strings.all) },
               selected = state.filter == SignalFilter.All,
-              onClick = { signalStore.onFilter(SignalFilter.All) }
+              onClick = { signalStore.onFilter(SignalFilter.All) },
+              colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+              ),
             )
             FilterChip(
               label = { Text(R.Strings.buy) },
               selected = state.filter == SignalFilter.Buy,
-              onClick = { signalStore.onFilter(SignalFilter.Buy) }
+              onClick = { signalStore.onFilter(SignalFilter.Buy) },
+              colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+              ),
             )
             FilterChip(
               label = { Text(R.Strings.sell) },
               selected = state.filter == SignalFilter.Sell,
-              onClick = { signalStore.onFilter(SignalFilter.Sell) }
+              onClick = { signalStore.onFilter(SignalFilter.Sell) },
+              colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+              ),
             )
             FilterChip(
               label = { Text(R.Strings.radar) },
               selected = state.filter == SignalFilter.Radar,
-              onClick = { signalStore.onFilter(SignalFilter.Radar) }
+              onClick = { signalStore.onFilter(SignalFilter.Radar) },
+              colors = FilterChipDefaults.filterChipColors(
+                selectedContainerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                selectedLabelColor = MaterialTheme.colorScheme.onTertiaryContainer,
+              ),
             )
           }
+
         }
+
         when (state.filter) {
           SignalFilter.All -> {
 //            LazyColumn(
@@ -191,6 +196,13 @@ fun Signals(
         }
       }
       SignalType.Notifications -> {
+        item {
+          Text(
+            text = R.Strings.news,
+            style = MaterialTheme.typography.titleMedium,
+            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+          )
+        }
         items(state.news) { news ->
           NewsItem(news)
           HorizontalDivider(thickness = 0.5.dp, color = MaterialTheme.colorScheme.surfaceVariant)
@@ -206,7 +218,7 @@ fun NewsItem(
   modifier: Modifier = Modifier
 ) {
   Row(
-    modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 16.dp),
     verticalAlignment = Alignment.CenterVertically,
   ) {
     Column(
@@ -215,23 +227,23 @@ fun NewsItem(
     ) {
       Text(
         text = news.label,
-        style = MaterialTheme.typography.labelSmall,
+        style = MaterialTheme.typography.labelMedium,
       )
       Text(
         text = news.title,
-        style = MaterialTheme.typography.titleMedium,
+        style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold),
       )
       Text(
         text = news.description,
         style = MaterialTheme.typography.bodyMedium,
       )
     }
-    Image(
+    Spacer(modifier = Modifier.width(8.dp))
+    Icon(
       painter = painterResource(R.Images.ic_logo),
       contentDescription = null,
-      modifier = Modifier
-        .width(100.dp)
-        .height(100.dp)
+      tint = Color.White,
+      modifier = Modifier.size(50.dp).background(Color.Black, RoundedCornerShape(8.dp))
     )
   }
 }
@@ -242,14 +254,17 @@ fun SignalItem(
   modifier: Modifier = Modifier
 ) {
   Column(
-    modifier = modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+    modifier = modifier
+//      .heightIn(min = 120.dp)
+      .fillMaxWidth()
+      .padding(horizontal = 16.dp, vertical = 16.dp),
     horizontalAlignment = Alignment.Start
   ) {
     Row(
       modifier = Modifier.padding(4.dp)
     ) {
       Text(
-        text = signal.assetType.toString(),
+        text = signal.assetType.displayName,
         style = MaterialTheme.typography.labelSmall,
       )
       Spacer(modifier = Modifier.weight(1f))
@@ -258,6 +273,7 @@ fun SignalItem(
         style = MaterialTheme.typography.labelSmall,
       )
     }
+    Spacer(modifier = Modifier.height(8.dp))
     Row {
       Icon(
         modifier = Modifier
@@ -286,10 +302,12 @@ fun SignalItem(
           text = signal.title,
           style = MaterialTheme.typography.bodyLarge,
         )
-        Text(
-          text = signal.description,
-          style = MaterialTheme.typography.bodySmall,
-        )
+        signal.description?.let {
+          Text(
+            text = it,
+            style = MaterialTheme.typography.bodySmall,
+          )
+        }
       }
     }
   }

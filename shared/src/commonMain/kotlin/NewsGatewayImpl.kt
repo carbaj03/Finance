@@ -1,3 +1,4 @@
+import arrow.core.raise.Raise
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.plugins.auth.Auth
@@ -12,9 +13,9 @@ import io.ktor.client.plugins.logging.Logging
 import io.ktor.client.request.get
 import io.ktor.serialization.kotlinx.json.json
 
-class NewsRepositoryImpl(
+class NewsRepository(
   private val userService: UserService
-) : NewsRepository {
+)  {
 
   private val client = HttpClient {
     install(ContentNegotiation) {
@@ -27,7 +28,7 @@ class NewsRepositoryImpl(
     install(Auth) {
       basic {
         credentials {
-          BasicAuthCredentials(username = "1", password = "1")
+          BasicAuthCredentials(username = "carbaj03", password = "password123")
         }
         realm = "Access to the '/' path"
       }
@@ -37,7 +38,8 @@ class NewsRepositoryImpl(
     }
   }
 
-  override suspend fun todayNews(): List<News> =
+
+  suspend fun todayNews(): List<News> =
     client.get("news").body()
 
 }

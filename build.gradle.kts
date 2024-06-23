@@ -9,4 +9,5 @@ plugins {
   alias(libs.plugins.googleGmsGoogleServices) apply false
   alias(libs.plugins.kotlinxSerialization) apply false
   alias(libs.plugins.kotlinJvm) apply false
+  alias(libs.plugins.jetbrainsKotlinAndroid) apply false
 }

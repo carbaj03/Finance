@@ -78,7 +78,7 @@ fun Application.installAuth() {
 //      }
       }
 
-      routs()
+//      routs()
     }
   }
 //    get("/hello") {

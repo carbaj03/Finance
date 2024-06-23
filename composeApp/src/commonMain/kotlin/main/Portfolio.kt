@@ -10,31 +10,19 @@ import R
 import ReitSummary
 import StockSummary
 import Summary
-import androidx.compose.foundation.ExperimentalFoundationApi
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.*
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListScope
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -138,6 +126,7 @@ fun Portfolio(
 operator fun Summary.invoke(
   state: LazyListState,
 ) {
+  val scrollState = rememberScrollState()
   LazyColumn(
     state = state,
   ) {
@@ -145,6 +134,7 @@ operator fun Summary.invoke(
       Column(
         modifier = Modifier.padding(16.dp)
       ) {
+        Spacer(modifier = Modifier.height(8.dp))
         Text(
           text = title,
           style = MaterialTheme.typography.titleLarge
@@ -175,41 +165,50 @@ operator fun Summary.invoke(
         }
       }
     }
-    header()
+    header(scrollState)
     items(items) { Asset ->
-      Asset()
+      Asset(scrollState)
     }
   }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
 fun LazyListScope.header(
+  scrollState: ScrollState,
   modifier: Modifier = Modifier,
 ) {
   stickyHeader {
     Row(
       modifier = modifier
-        .background(color = MaterialTheme.colorScheme.primaryContainer)
+        .background(color = MaterialTheme.colorScheme.secondaryContainer)
         .fillMaxWidth()
-        .padding(8.dp, 8.dp),
+        .padding(16.dp, 10.dp),
       verticalAlignment = Alignment.CenterVertically
     ) {
       TextLabel(
         text = "Ticker",
-        modifier = Modifier.weight(1f),
+        modifier = Modifier.width(width),
       )
-      TextLabel(
-        text = "Añadida",
-        modifier = Modifier.weight(1f)
-      )
-      TextLabel(
-        text = "Entrada",
-        modifier = Modifier.weight(1f)
-      )
-      TextLabel(
-        text = "Stop",
-        modifier = Modifier.weight(1f)
-      )
+      Row(
+        modifier = Modifier.horizontalScroll(scrollState),
+      ) {
+        TextLabel(
+          text = "Valor",
+          modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+        )
+        TextLabel(
+          text = "Añadida",
+          modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+        )
+        TextLabel(
+          text = "Entrada",
+          modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+        )
+        TextLabel(
+          text = "Stop",
+          modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+        )
+      }
     }
   }
 }
@@ -220,41 +219,55 @@ fun TextLabel(
   modifier: Modifier = Modifier
 ) {
   Text(
-    modifier = modifier,
+    modifier = modifier.padding(horizontal = 2.dp),
     text = text,
-    style = MaterialTheme.typography.labelSmall,
-    color = MaterialTheme.colorScheme.onPrimaryContainer
-  )
+    style = MaterialTheme.typography.labelLarge,
+    color = MaterialTheme.colorScheme.onSecondaryContainer,
+    maxLines = 1,
+
+    )
 }
+
+val width = 100.dp
 
 @Composable
 private operator fun Asset.invoke(
-  modifier: Modifier = Modifier
+  scrollState: ScrollState,
+  modifier: Modifier = Modifier,
 ) {
   Row(
-    modifier = modifier.fillMaxWidth().padding(8.dp, 8.dp),
-    verticalAlignment = Alignment.CenterVertically
+    modifier = modifier.fillMaxWidth().padding(16.dp, 16.dp),
+    verticalAlignment = Alignment.CenterVertically,
   ) {
     Text(
       text = ticker,
-      style = MaterialTheme.typography.bodyLarge,
-      modifier = Modifier.weight(1f)
+      style = MaterialTheme.typography.bodyLarge.copy(fontWeight = FontWeight.Bold),
+      modifier = Modifier.width(width),
     )
-    Text(
-      text = added,
-      style = MaterialTheme.typography.labelSmall,
-      modifier = Modifier.weight(1f)
-    )
-    Text(
-      text = entry.toString(),
-      style = MaterialTheme.typography.labelSmall,
-      modifier = Modifier.weight(1f)
-    )
-    Text(
-      text = stop.toString(),
-      style = MaterialTheme.typography.labelSmall,
-      modifier = Modifier.weight(1f)
-    )
+    Row(
+      modifier = Modifier.horizontalScroll(scrollState),
+    ) {
+      Text(
+        text = name,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+      )
+      Text(
+        text = added,
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+      )
+      Text(
+        text = entry.toString(),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+      )
+      Text(
+        text = stop.toString(),
+        style = MaterialTheme.typography.bodyMedium,
+        modifier = Modifier.padding(horizontal = 2.dp).width(100.dp),
+      )
+    }
   }
 }
 
@@ -275,7 +288,7 @@ private fun header(
     )
     Text(
       text = value,
-      style = MaterialTheme.typography.titleLarge,
+      style = MaterialTheme.typography.headlineMedium.copy(fontWeight = FontWeight.Bold),
       color = contentColor,
     )
   }

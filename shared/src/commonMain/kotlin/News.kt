@@ -7,7 +7,3 @@ data class News(
   val description: String,
   val image: String,
 )
-
-interface NewsRepository {
-  suspend fun todayNews(): List<News>
-}

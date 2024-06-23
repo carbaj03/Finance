@@ -25,13 +25,13 @@ class SignalRepositoryImpl : SignalRepository {
     install(Auth) {
       basic {
         credentials {
-          BasicAuthCredentials(username = "1", password = "1")
+          BasicAuthCredentials(username = "carbaj03", password = "password123")
         }
         realm = "Access to the '/' path"
       }
     }
     defaultRequest {
-      url("http://10.0.2.2:8080")
+      url(localHost())
     }
   }
 

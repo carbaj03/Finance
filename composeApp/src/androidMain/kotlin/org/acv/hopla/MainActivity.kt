@@ -1,123 +1,95 @@
 package org.acv.hopla
 
 import App
-import Dependencies
-import GoogleTap
-import Logged
-import MockDependencies
-import NotLogged
-import User
-import UserService
-import android.content.Intent
+import Mode
+import android.Manifest
+import android.app.NotificationChannel
+import android.app.NotificationManager
+import android.content.pm.PackageManager
 import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
+import android.util.Log
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
-import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.tooling.preview.Preview
-import com.google.android.gms.auth.api.identity.Identity
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import org.acv.hopla.auth.GoogleAuthUiClient
-import org.acv.hopla.auth.SignInError
-import org.acv.hopla.auth.UserData
-import rememberDeferrable
-
-@Composable
-fun Tab(
-  googleAuthUiClient: GoogleAuthUiClient,
-  userService: UserService
-): GoogleTap {
-  val result = rememberDeferrable<Intent?>()
-
-  val launcher = rememberLauncherForActivityResult(
-    contract = ActivityResultContracts.StartIntentSenderForResult(),
-    onResult = {
-      if (it.resultCode == ComponentActivity.RESULT_OK) {
-        result.complete(it.data)
-      }
-    }
-  )
-
-  return remember {
-    object : GoogleTap {
-      override suspend fun logout() {
-        googleAuthUiClient.signOut()
-      }
-
-      override suspend fun login() {
-        val signInIntentSender = googleAuthUiClient.signIn()!!
-        val request = IntentSenderRequest.Builder(signInIntentSender).build()
-        launcher.launch(request)
-
-        result.await()?.let {
-          val signInResult = googleAuthUiClient.signInWithIntent(intent = it)
-          when (signInResult) {
-            is SignInError -> {
-              userService.logout()
-            }
-            is UserData -> {
-              userService.login("1", "1")
-            }
-          }
-        }
-      }
-    }
-  }
-}
+import androidx.core.content.ContextCompat
 
 class MainActivity : ComponentActivity() {
 
-  private val googleAuthUiClient: GoogleAuthUiClient by lazy {
-    GoogleAuthUiClient(
-      oneTapClient = Identity.getSignInClient(applicationContext)
-    )
+  private val requestPermissionLauncher = registerForActivityResult(
+    ActivityResultContracts.RequestPermission(),
+  ) { isGranted: Boolean ->
+    if (isGranted) {
+      Toast.makeText(this, "Notifications permission granted", Toast.LENGTH_SHORT).show()
+    } else {
+      Toast.makeText(
+        this,
+        "FCM can't post notifications without POST_NOTIFICATIONS permission",
+        Toast.LENGTH_LONG,
+      ).show()
+    }
   }
 
   override fun onCreate(savedInstanceState: Bundle?) {
-    enableEdgeToEdge(
-      statusBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-      navigationBarStyle = SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT),
-    )
-
     super.onCreate(savedInstanceState)
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+      // Create channel to show notifications.
+      val channelId = getString(R.string.default_notification_channel_id)
+      val channelName = getString(R.string.default_notification_channel_name)
+      val notificationManager = getSystemService(NotificationManager::class.java)
+      notificationManager?.createNotificationChannel(
+        NotificationChannel(
+          channelId,
+          channelName,
+          NotificationManager.IMPORTANCE_LOW,
+        ),
+      )
+    }
+
+    intent?.extras?.let {
+      for (key in it.keySet()) {
+        val value = intent.extras?.getString(key)
+        Log.d("MainActivity", "Key: $key Value: $value")
+      }
+    }
+
+    askNotificationPermission()
+
     setContent {
+      var theme: Mode by remember { mutableStateOf(Mode.Light) }
 
-      val userService = remember {
-        object : UserService {
-          private val _user: MutableStateFlow<User> = MutableStateFlow(NotLogged)
-
-          override val user: StateFlow<User> = _user
-
-          override suspend fun login(username: String, password: String): Logged {
-            _user.value = Logged("")
-            return Logged("")
-          }
-
-          override suspend fun logout(): NotLogged {
-            _user.value = NotLogged
-            return NotLogged
-          }
-        }
+      DisposableEffect(theme) {
+        enableEdgeToEdge(
+          statusBarStyle = when (theme) {
+            Mode.Light -> SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+            Mode.Dark -> SystemBarStyle.dark(Color.TRANSPARENT)
+          },
+          navigationBarStyle = when (theme) {
+            Mode.Light -> SystemBarStyle.light(Color.TRANSPARENT, Color.TRANSPARENT)
+            Mode.Dark -> SystemBarStyle.dark(Color.TRANSPARENT)
+          },
+        )
+        onDispose {}
       }
 
-      val tab = Tab(googleAuthUiClient, userService)
+      App(onThemeChange = { theme = it })
+    }
+  }
 
-      val dependencies = remember {
-        object : Dependencies {
-          override val googleTap: GoogleTap = tab
-          override val userService: UserService = userService
-        }
+  private fun askNotificationPermission() {
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+      if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+        // FCM SDK (and your app) can post notifications.
+      } else {
+        requestPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
       }
-
-      App(dependencies)
     }
   }
 }
@@ -125,5 +97,5 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun AppAndroidPreview() {
-  App(MockDependencies())
+  App({})
 }

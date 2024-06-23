@@ -1,4 +1,5 @@
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 
 interface Strings {
   val dropdown: String
@@ -20,6 +21,7 @@ interface Strings {
 object R {
 
   object Strings {
+    const val news: String = "Noticias relevantes para hoy"
     const val dropdown: String = "Máxima Perdida"
     const val expiration: String = "Vencimiento Media"
     const val performance: String = "Rentavilidad Media"
@@ -32,12 +34,19 @@ object R {
 
     const val signals = "Señales"
     const val portfolio = "Cartera"
-    const val historical = "Histórico"
+    const val historical = "Historial"
     const val system = "Sistema"
 
   }
 
   object Images {
+    const val ic_user = "face.png"
+
+    const val DarkMode: String = "ic_dark_mode.xml"
+    const val LightMode: String = "ic_light_mode.xml"
+    const val ArrowUp = "ic_arrow_up.xml"
+    const val ArrowDown = "ic_arrow_down.xml"
+
     const val ic_logo = "ic_hopla.xml"
 
     const val ic_alerts = "ic_alerts.xml"
@@ -62,6 +71,12 @@ object R {
   }
 
   object Color {
+
+    val White = Color(0xFFFFFFFF)
+    val Black = Color(0xFF000000)
+    val Transparent = Color(0x00000000)
+    val Grey = Color(0xFF808080)
+
     val RedPastel = Color(0xFFD9A3A3)
     val GreenPastel = Color(0xFFA3D9A3)
     val BluePastel = Color(0xFFA3A3D9)
@@ -79,6 +94,7 @@ object R {
     val LightOrange = Color(0xFFFFDFA3)
     val LightPink = Color(0xFFFFA3DF)
     val LightCyan = Color(0xFFA3FFFF)
+    val LightGrey = Color(0xFFD3D3D3)
 
     val VintageRed = Color(0xFFB7410E)
     val VintageGreen = Color(0xFF6B8E23)

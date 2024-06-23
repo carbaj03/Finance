@@ -4,70 +4,105 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
-import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScrollableTabRow
+import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.SecondaryIndicator
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
+import helper.customTabIndicatorOffset
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import main.PortfolioStore
+import main.SignalStore
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import org.jetbrains.compose.resources.painterResource
 import kotlin.time.Duration.Companion.seconds
 
 @Composable
+expect fun rememberGoogleTap(userService: UserService): GoogleTap
+
+@Composable
 fun App(
-  dependencies: Dependencies
+  onThemeChange: (Mode) -> Unit,
 ) {
-  MaterialTheme(
-    colorScheme = MaterialTheme.colorScheme.copy(
-      primary = Color.Black,
-      onPrimary = Color.White,
-      onPrimaryContainer = Color.White,
-      primaryContainer = Color.Black,
-      surfaceVariant = R.Color.VintageGreen,
-      onSurfaceVariant = Color.Black,
-      secondary = Color.Black,
-      onSecondary = Color.White,
-      secondaryContainer = Color.Black,
-      onSecondaryContainer = Color.White,
-    )
-  ) {
+  val userService = remember {
+    object : UserService {
+      private val _user: MutableStateFlow<User> = MutableStateFlow(NotLogged)
 
+      override val user: StateFlow<User> = _user
+
+      override suspend fun login(username: String, password: String): Logged {
+        _user.value = Logged(username)
+        return Logged(username)
+      }
+
+      override suspend fun logout(): NotLogged {
+        _user.value = NotLogged
+        return NotLogged
+      }
+    }
+  }
+
+  val googleTap = rememberGoogleTap(userService)
+  val themeService = remember {
+    object : ThemeService {
+      private val _mode: MutableStateFlow<Mode> = MutableStateFlow(Mode.Light)
+      override val mode: StateFlow<Mode> = _mode
+      override fun toggle() {
+        _mode.value = when (_mode.value) {
+          Mode.Light -> Mode.Dark
+          Mode.Dark -> Mode.Light
+        }
+        onThemeChange(_mode.value)
+      }
+    }
+  }
+
+  val dependencies = remember {
+    object : Dependencies {
+      override val googleTap: GoogleTap = googleTap
+      override val userService: UserService = userService
+      override val themeService: ThemeService = themeService
+    }
+  }
+
+  val scope = rememberCoroutineScope()
+  val mainStore = remember { MainStore(scope = scope, userService = dependencies.userService) }
+
+  val mode by dependencies.themeService.mode.collectAsState()
+
+  Theme(mode = mode) {
     var splah by remember { mutableStateOf(true) }
-
     val user: User by dependencies.userService.user.collectAsState()
-
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(Unit) {
       delay(2.seconds)
       splah = false
     }
 
-    val store = remember { LoginStore(scope = scope, googleTap = dependencies.googleTap, userService = dependencies.userService) }
-    val mainStore = remember { MainStore(scope = scope, userService = dependencies.userService) }
-
     when {
       splah -> SplashScreen()
       else -> when (user) {
-        is NotLogged -> LoginScreen(store = store)
-        is Logged -> MainScreen(store = mainStore, dependencies = dependencies)
+        is NotLogged -> {
+          val store = remember { LoginStore(scope = scope, googleTap = dependencies.googleTap, userService = dependencies.userService) }
+          LoginScreen(store = store)
+        }
+        is Logged -> {
+          val portfolioStore = remember { PortfolioStore(portfolioRepository = PortfolioGatewayImpl(dependencies.userService)) }
+          val signalStore = remember { SignalStore(signalRepository = SignalRepositoryImpl(), newsRepository = NewsRepository(dependencies.userService)) }
+          val homeStore = remember { HomeStore(themeService = dependencies.themeService) }
+
+          MainScreen(
+            homeStore = homeStore,
+            store = mainStore,
+            portfolioStore = portfolioStore,
+            signalStore = signalStore,
+          )
+        }
       }
     }
   }
@@ -78,10 +113,11 @@ fun CustomTabs(
   selected: Int,
   onSelected: (Int) -> Unit,
   tabs: List<String>,
+  modifier: Modifier = Modifier
 ) {
   ScrollableTabRow(
     selectedTabIndex = selected,
-    modifier = Modifier.fillMaxWidth(),
+    modifier = modifier,
     edgePadding = 0.dp,
     divider = { HorizontalDivider(thickness = 0.5.dp) },
     indicator = { tabPositions ->
